@@ -1131,11 +1131,12 @@ select:focus {
   }
 }
 
-/* Responsive */
+/* Responsive: Tablets y Móviles (< 900px) */
 @media (max-width: 900px) {
   .hero-grid,
   .form-container {
     grid-template-columns: 1fr;
+    gap: 36px;
   }
   
   .form-row {
@@ -1158,5 +1159,74 @@ select:focus {
   .floating-whatsapp {
     bottom: 20px;
     right: 20px;
+  }
+}
+
+/* Responsive: Móviles (< 640px) */
+@media (max-width: 640px) {
+  .nav-links a:not(.btn) {
+    display: none; /* Oculta enlaces de texto en celular y prioriza el botón de llamada a la acción */
+  }
+
+  .hero {
+    padding: 40px 0 30px;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .hero-actions .btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .hero-stats {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .stat-divider {
+    display: none;
+  }
+
+  .form-card {
+    padding: 24px 18px;
+    border-radius: 16px;
+  }
+
+  .preview-card {
+    padding: 16px;
+  }
+
+  .mockup-screen.video-screen {
+    min-height: 250px;
+  }
+
+  .screen-content.overlay-content h3 {
+    font-size: 1.15rem;
+  }
+
+  .live-metric-box {
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+  }
+
+  .floating-whatsapp {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .whatsapp-label {
+    display: none; /* En pantallas muy pequeñas, muestra el icono circular flotante para no tapar contenido */
+  }
+
+  .whatsapp-btn {
+    padding: 14px;
+    border-radius: 50%;
   }
 }
