@@ -35,8 +35,10 @@ Este repositorio contiene la arquitectura de negocio, inteligencia de mercado ba
 
 ---
 
-## 📌 Próximos Pasos (Semana 2)
-Al reanudar la sesión, continuaremos con la siguiente etapa del funnel comercial:
-1. **Definición de la Oferta Irresistible (Grand Slam Offer):** Estructura de valor, garantías y reducción de fricción para Induvallas.
-2. **Lead Magnet y Mecanismo de Captación (MOFU):** Calculadora de tráfico/ROI o Auditoría de Visibilidad OOH para prospectos corporativos.
-3. **Flujo de Cualificación y Conversión Comercial (BOFU):** Script de prospección B2B y cierre de ventas.
+### ✅ Semana 2: Experiencia de Usuario y Filtro de Captación - MOFU (Completado)
+* **Enlace Público en Producción (Vercel):** [https://induvallas-landing-landing.vercel.app/](https://induvallas-landing-landing.vercel.app/)
+* **Repositorio GitHub:** [https://github.com/fabiancnow/induvallas-landing](https://github.com/fabiancnow/induvallas-landing)
+* **Decisiones de UX y Usabilidad:** Arquitectura en F/Z, Hero de alto impacto, prueba social temprana y resolución de los 3 dolores nucleares.
+* **Formulario Filtro MOFU:** Cualificación de prospectos por capacidad económica (presupuesto mensual), autoridad (cargo/empresa), cobertura geográfica (zonas) y objetivo comercial.
+* **Captura de Datos en Supabase:** Tabla `leads` configurada en `rgkcbbtwqwumlvubpulb.supabase.co` con inserción protegida por RLS.
+* **Reporte Detallado:** Disponible en [`reports/semana_2_experiencia_usuario_y_captacion.md`](reports/semana_2_experiencia_usuario_y_captacion.md).

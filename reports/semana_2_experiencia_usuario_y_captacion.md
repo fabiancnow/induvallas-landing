@@ -1,7 +1,9 @@
 # Experiencia de Usuario y Filtro de Captación - MOFU (Semana 2)
 **Marca:** Induvallas  
 **Objetivo:** Landing Page de alta conversión B2B con filtro de cualificación y captura de leads en Supabase.  
-**Estado:** Código desarrollado y listo para despliegue en Vercel.  
+**Enlace Público en Producción (Vercel):** [https://induvallas-landing-landing.vercel.app/](https://induvallas-landing-landing.vercel.app/)  
+**Repositorio GitHub:** [https://github.com/fabiancnow/induvallas-landing](https://github.com/fabiancnow/induvallas-landing)  
+**Estado:** ✅ Desplegado y verificado en producción con captura activa a Supabase.  
 
 ---
 
