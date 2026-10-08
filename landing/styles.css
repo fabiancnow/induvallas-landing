@@ -511,40 +511,97 @@ body {
   color: #cbd5e1;
 }
 
-/* Trust Bar */
+/* Trust Bar & Infinite Motion Marquee Ticker */
 .trust-bar {
-  padding: 30px 0;
-  background-color: var(--bg-alt);
+  padding: 34px 0 28px 0;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
   border-top: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
-  text-align: center;
+  overflow: hidden;
 }
 
 .trust-title {
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--text-muted);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  text-align: center;
 }
 
-.trust-logos {
+.marquee-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  padding: 8px 0;
+  /* Mascara con degradado en los extremos para transicion suave estilo cinematografico */
+  mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+}
+
+.marquee-track {
   display: flex;
-  justify-content: center;
+  width: max-content;
+  animation: marqueeScroll 32s linear infinite;
+  will-change: transform;
+}
+
+.marquee-wrapper:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+.marquee-group {
+  display: flex;
   align-items: center;
-  gap: 28px;
-  flex-wrap: wrap;
+  gap: 20px;
+  padding-right: 20px;
+  flex-shrink: 0;
 }
 
 .client-logo {
-  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
   font-weight: 700;
-  color: #718096;
-  padding: 8px 16px;
-  border-radius: 6px;
+  letter-spacing: 0.04em;
+  color: var(--primary-color);
+  padding: 10px 22px;
+  border-radius: 9999px;
   background: #ffffff;
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(26, 24, 84, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  white-space: nowrap;
+  user-select: none;
+  transition: all 0.25s ease;
+}
+
+.client-logo:hover {
+  border-color: var(--accent-orange);
+  color: var(--accent-orange);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(249, 157, 27, 0.18);
+}
+
+.client-logo .logo-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+@keyframes marqueeScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
 }
 
 /* Benefits Section */
