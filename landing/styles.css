@@ -307,9 +307,26 @@ body {
   color: #ffffff;
   font-size: 0.7rem;
   font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 3px 10px;
+  border-radius: 9999px;
   letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-live .pulse-ring {
+  width: 7px;
+  height: 7px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  animation: pulseDot 1.4s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0% { transform: scale(0.9); opacity: 0.6; }
+  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 8px #ffffff; }
+  100% { transform: scale(0.9); opacity: 0.6; }
 }
 
 .preview-location {
@@ -318,52 +335,165 @@ body {
   font-weight: 600;
 }
 
-.mockup-screen {
-  background: linear-gradient(135deg, #1f2357 0%, #15183d 100%);
-  border-radius: 12px;
-  padding: 40px 24px;
-  text-align: center;
-  border: 1px solid rgba(249, 157, 27, 0.3);
+/* Video Screen Mockup (Estilo Motion Site) */
+.mockup-screen.video-screen {
+  background: #090826;
+  border-radius: 14px;
+  padding: 0;
+  min-height: 290px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid rgba(249, 157, 27, 0.45);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(249, 157, 27, 0.15);
   position: relative;
   overflow: hidden;
 }
 
-.screen-glow {
+.hero-video-element {
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(249, 157, 27, 0.15) 0%, transparent 60%);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.7) contrast(1.15) saturate(1.1);
+  z-index: 0;
+}
+
+.video-overlay-gradient {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(16, 14, 60, 0.4) 0%, rgba(9, 8, 38, 0.85) 100%);
+  z-index: 1;
   pointer-events: none;
 }
 
-.screen-content {
+.radar-scan-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, transparent 0%, rgba(249, 157, 27, 0.8) 50%, #ffffff 75%, transparent 100%);
+  box-shadow: 0 0 12px rgba(249, 157, 27, 0.85);
+  z-index: 2;
+  pointer-events: none;
+  animation: radarScan 4.5s ease-in-out infinite alternate;
+}
+
+@keyframes radarScan {
+  0% { left: 0%; opacity: 0.3; }
+  50% { opacity: 0.9; }
+  100% { left: 100%; opacity: 0.3; }
+}
+
+.screen-content.overlay-content {
   position: relative;
-  z-index: 1;
+  z-index: 3;
+  width: 100%;
+  padding: 24px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
 }
 
-.screen-content .tag {
-  display: inline-block;
-  background-color: rgba(249, 157, 27, 0.2);
+.hud-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hud-top .hud-tag {
+  background-color: rgba(249, 157, 27, 0.25);
   color: var(--accent-orange);
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 4px 12px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 10px;
   border-radius: 9999px;
-  margin-bottom: 12px;
+  border: 1px solid rgba(249, 157, 27, 0.4);
+  margin-bottom: 0;
 }
 
-.screen-content h3 {
-  font-size: 1.5rem;
+.hud-status {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #34d399;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.15);
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.dot-green {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+  animation: blinkDot 1.4s infinite;
+}
+
+@keyframes blinkDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.screen-content.overlay-content h3 {
+  font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: 0.02em;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
 }
 
-.screen-content p {
-  font-size: 0.9rem;
+.screen-content.overlay-content p {
+  font-size: 0.88rem;
+  color: #e2e8f0;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+  max-width: 90%;
+  margin: 0 auto;
+}
+
+.hud-live-metrics {
+  margin-top: 20px;
+  width: 100%;
+}
+
+.live-metric-box {
+  background: rgba(15, 14, 56, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(249, 157, 27, 0.3);
+  border-radius: 8px;
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.metric-title {
+  font-size: 0.8rem;
   color: #cbd5e1;
+  font-weight: 600;
+}
+
+.metric-value {
+  color: #ffffff;
+}
+
+.metric-value strong {
+  font-size: 1.15rem;
+  font-family: 'Courier New', Courier, monospace;
+  color: var(--accent-orange);
+  letter-spacing: 0.05em;
 }
 
 .preview-footer {

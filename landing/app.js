@@ -108,4 +108,15 @@ document.addEventListener("DOMContentLoaded", () => {
     feedback.style.display = "block";
     feedback.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
+
+  // Simulador de Telemetría y Flujo en Tiempo Real (Efecto Motion Site)
+  const counterEl = document.getElementById("liveCounter");
+  if (counterEl) {
+    let currentCount = 85420;
+    setInterval(() => {
+      const delta = Math.floor(Math.random() * 3) + 1;
+      currentCount += delta;
+      counterEl.textContent = currentCount.toLocaleString("es-EC");
+    }, 2600);
+  }
 });

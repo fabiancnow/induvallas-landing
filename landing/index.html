@@ -82,22 +82,35 @@
       <div class="hero-card-preview">
         <div class="preview-card">
           <div class="preview-header">
-            <span class="status-live">EN VIVO</span>
-            <span class="preview-location">📍 Av. Eloy Alfaro & Metro Quito</span>
+            <span class="status-live"><span class="pulse-ring"></span> EN VIVO</span>
+            <span class="preview-location">📍 Circuito Metro de Quito & Av. Eloy Alfaro</span>
           </div>
           <div class="preview-visual">
-            <div class="mockup-screen">
-              <div class="screen-glow"></div>
-              <div class="screen-content">
-                <span class="tag">PANTALLA DIGITAL DOOH</span>
+            <div class="mockup-screen video-screen">
+              <video class="hero-video-element" id="heroVideo" autoplay muted loop playsinline>
+                <source src="assets/billboard.webm" type="video/webm">
+              </video>
+              <div class="video-overlay-gradient"></div>
+              <div class="radar-scan-line"></div>
+              <div class="screen-content overlay-content">
+                <div class="hud-top">
+                  <span class="tag hud-tag">PANTALLA DIGITAL DOOH</span>
+                  <span class="hud-status"><span class="dot-green"></span> AUDITORÍA EN TIEMPO REAL</span>
+                </div>
                 <h3>MÁXIMA RETENCIÓN VISUAL</h3>
-                <p>Auditoría de tráfico 24/7 con mapas de calor de flujo peatonal y vehicular.</p>
+                <p>Monitoreo continuo de audiencias con mapas de calor y flujo vehicular.</p>
+                <div class="hud-live-metrics">
+                  <div class="live-metric-box">
+                    <span class="metric-title">Flujo Registrado Hoy:</span>
+                    <span class="metric-value"><strong id="liveCounter">85.420</strong> <small>vehículos</small></span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
           <div class="preview-footer">
-            <div class="metric-chip">🔥 Flujo: <strong>85.000 vehículos/día</strong></div>
-            <div class="metric-chip">⚡ Energía: <strong>Solar & LED Eco</strong></div>
+            <div class="metric-chip">🔥 Retención: <strong>94.8% Impacto Visual</strong></div>
+            <div class="metric-chip">⚡ Tecnología: <strong>Solar & LED Eco</strong></div>
           </div>
         </div>
       </div>
