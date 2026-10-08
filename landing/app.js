@@ -119,4 +119,26 @@ document.addEventListener("DOMContentLoaded", () => {
       counterEl.textContent = currentCount.toLocaleString("es-EC");
     }, 2600);
   }
+
+  // UI/UX Pro Max: FAQ Accordion Interactive
+  const faqQuestions = document.querySelectorAll(".faq-question");
+  faqQuestions.forEach((button) => {
+    button.addEventListener("click", () => {
+      const item = button.closest(".faq-item");
+      const isExpanded = button.getAttribute("aria-expanded") === "true";
+
+      // Cerrar otros ítems abiertos para mantener lectura limpia
+      document.querySelectorAll(".faq-item.active").forEach((openItem) => {
+        if (openItem !== item) {
+          openItem.classList.remove("active");
+          const openBtn = openItem.querySelector(".faq-question");
+          if (openBtn) openBtn.setAttribute("aria-expanded", "false");
+        }
+      });
+
+      // Alternar el ítem clickeado
+      item.classList.toggle("active");
+      button.setAttribute("aria-expanded", String(!isExpanded));
+    });
+  });
 });
