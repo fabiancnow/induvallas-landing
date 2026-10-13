@@ -34,3 +34,13 @@ ON public.leads
 FOR SELECT 
 TO anon, authenticated 
 USING (true);
+
+-- Permitir actualización de estado del embudo comercial desde el Panel de Ventas (CRM Admin)
+DROP POLICY IF EXISTS "Permitir actualizacion de estado en CRM" ON public.leads;
+CREATE POLICY "Permitir actualizacion de estado en CRM"
+ON public.leads
+FOR UPDATE
+TO anon, authenticated
+USING (true)
+WITH CHECK (true);
+

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Induvallas CRM | Panel de Ventas & Control de Leads</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+  <!-- ==========================================
+       PANTALLA DE BLOQUEO: ACCESO EXCLUSIVO ADMIN
+       ========================================== -->
+  <div id="authOverlay" class="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo">
+          <span class="logo-text">INDU<span class="highlight">VALLAS</span></span>
+          <span class="logo-badge">COMMAND CENTER</span>
+        </div>
+        <h1>Panel Ejecutivo de Ventas</h1>
+        <p>Acceso restringido exclusivamente para el Administrador Comercial de la Landing Page.</p>
+      </div>
+
+      <form id="adminLoginForm" class="auth-form">
+        <div class="form-group">
+          <label for="adminEmail">Usuario / Correo de Administrador</label>
+          <div class="input-icon-wrap">
+            <span class="input-icon">👤</span>
+            <input
+              type="email"
+              id="adminEmail"
+              placeholder="admin@induvallas.com"
+              required
+              autocomplete="username"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="adminPassword">Clave Maestra de Acceso</label>
+          <div class="input-icon-wrap">
+            <span class="input-icon">🔑</span>
+            <input
+              type="password"
+              id="adminPassword"
+              placeholder="••••••••••••••••"
+              required
+              autocomplete="current-password"
+            />
+            <button type="button" id="togglePwdBtn" class="toggle-pwd-btn" title="Mostrar/Ocultar contraseña">👁️</button>
+          </div>
+        </div>
+
+        <div class="auth-options">
+          <label class="remember-check">
+            <input type="checkbox" id="rememberSession" checked />
+            <span>Mantener sesión activa en este navegador</span>
+          </label>
+        </div>
+
+        <div id="authError" class="auth-error" style="display: none;"></div>
+
+        <button type="submit" id="loginSubmitBtn" class="btn-auth-submit">
+          <span>🔒 Desbloquear Panel de Ventas</span>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <p class="security-note">🛡️ Conexión encriptada SSL con Supabase PostgreSQL (RLS Activo)</p>
+        <a href="index.html" class="back-to-site">← Volver a la Landing Page Pública</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       DASHBOARD PRINCIPAL DE VENTAS (SOLO ADMIN)
+       ========================================== -->
+  <div id="adminApp" class="admin-app" style="display: none;">
+    
+    <!-- Top Navigation Bar -->
+    <header class="admin-topbar">
+      <div class="topbar-left">
+        <div class="brand-lockup">
+          <span class="logo-text">INDU<span class="highlight">VALLAS</span></span>
+          <span class="crm-tag">CRM VENTAS B2B</span>
+        </div>
+        <span class="connection-pill" id="dbStatusPill">
+          <span class="status-dot online"></span> Conectado a Supabase
+        </span>
+      </div>
+
+      <div class="topbar-right">
+        <button type="button" id="openNewLeadModalBtn" class="btn-action btn-primary-sm">
+          <span>＋ Nuevo Prospecto</span>
+        </button>
+        <button type="button" id="exportCsvBtn" class="btn-action btn-outline-sm" title="Descargar en formato Excel / CSV">
+          <span>📥 Exportar CSV</span>
+        </button>
+        <button type="button" id="openSecurityModalBtn" class="btn-action btn-outline-sm" title="Cambiar clave de administrador">
+          <span>⚙️ Clave Admin</span>
+        </button>
+        <a href="index.html" target="_blank" class="btn-action btn-ghost-sm" title="Ver Landing Page en vivo">
+          <span>🌐 Ver Landing ↗</span>
+        </a>
+        <div class="admin-profile">
+          <span class="admin-avatar">AD</span>
+          <div class="admin-meta">
+            <strong id="loggedAdminName">Director Comercial</strong>
+            <small>Administrador</small>
+          </div>
+          <button type="button" id="logoutBtn" class="btn-logout" title="Cerrar Sesión Segura">
+            Salir 🚪
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-main">
+      <!-- Fila 1: KPIs Ejecutivos en Tiempo Real -->
+      <section class="kpi-grid" aria-label="Indicadores Clave de Ventas">
+        <article class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Total Prospectos (MOFU)</span>
+            <span class="kpi-icon blue">👥</span>
+          </div>
+          <div class="kpi-value" id="kpiTotalLeads">0</div>
+          <div class="kpi-foot">
+            <span class="kpi-trend positive" id="kpiNewCount">0 nuevos por atender</span>
+          </div>
+        </article>
+
+        <article class="kpi-card highlight-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Pipeline Mensual Estimado</span>
+            <span class="kpi-icon orange">💰</span>
+          </div>
+          <div class="kpi-value" id="kpiPipelineValue">$0</div>
+          <div class="kpi-foot">
+            <span class="kpi-sub">Potencial mensual según rangos declarados</span>
+          </div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Cuentas High-Ticket (VIP 🔥)</span>
+            <span class="kpi-icon red">🔥</span>
+          </div>
+          <div class="kpi-value" id="kpiHighTicket">0</div>
+          <div class="kpi-foot">
+            <span class="kpi-sub">Presupuestos mayores a $3,500 / mes</span>
+          </div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Tasa de Avance Comercial</span>
+            <span class="kpi-icon green">📈</span>
+          </div>
+          <div class="kpi-value" id="kpiConversionRate">0%</div>
+          <div class="kpi-foot">
+            <span class="kpi-sub" id="kpiClosedCount">0 en negociación / cerrados</span>
+          </div>
+        </article>
+      </section>
+
+      <!-- Fila 2: Inteligencia Comercial (Dolores vs Plazas) -->
+      <section class="insights-grid">
+        <div class="insight-box">
+          <div class="insight-header">
+            <h3>🎯 Demanda por Dolor Comercial (Fase 1 -> MOFU)</h3>
+            <span class="insight-subtitle">¿Qué problema buscan resolver las empresas?</span>
+          </div>
+          <div id="painDistributionList" class="distribution-list">
+            <!-- Renderizado dinámico -->
+          </div>
+        </div>
+
+        <div class="insight-box">
+          <div class="insight-header">
+            <h3>📍 Plazas y Ciudades Más Solicitadas</h3>
+            <span class="insight-subtitle">Concentración geográfica de vallas y pantallas</span>
+          </div>
+          <div id="cityDistributionList" class="distribution-list">
+            <!-- Renderizado dinámico -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Fila 3: Barra de Herramientas, Filtros y Conmutador de Vista -->
+      <section class="controls-bar">
+        <div class="search-and-filters">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Buscar por empresa, contacto, correo, teléfono o ciudad..."
+            />
+          </div>
+
+          <select id="filterEstado" class="filter-select" aria-label="Filtrar por estado">
+            <option value="todos">📌 Todos los Estados</option>
+            <option value="nuevo">🔵 Nuevos (Sin contactar)</option>
+            <option value="contactado">🟡 Contactados</option>
+            <option value="negociacion">🟣 En Negociación / Propuesta</option>
+            <option value="ganado">🟢 Cerrado / Ganado</option>
+            <option value="descartado">🔴 Descalificado / Sin presupuesto</option>
+          </select>
+
+          <select id="filterPrioridad" class="filter-select" aria-label="Filtrar por prioridad">
+            <option value="todas">⚡ Todas las Prioridades</option>
+            <option value="alta">🔥 Prioridad Alta (VIP &gt; $3,500)</option>
+            <option value="media">⚡ Prioridad Media ($1,500 - $3,500)</option>
+            <option value="baja">🌱 Prioridad Inicial (&lt; $1,500)</option>
+          </select>
+        </div>
+
+        <div class="view-actions">
+          <div class="view-switcher" role="group" aria-label="Cambiar vista">
+            <button type="button" id="viewTableBtn" class="view-btn active">📋 Tabla CRM</button>
+            <button type="button" id="viewKanbanBtn" class="view-btn">🗂️ Embudo Kanban</button>
+          </div>
+          <button type="button" id="refreshBtn" class="btn-refresh" title="Sincronizar datos desde Supabase">
+            🔄 Sincronizar
+          </button>
+        </div>
+      </section>
+
+      <!-- Fila 4A: Vista Tabla Ejecutiva de Leads -->
+      <section id="tableViewSection" class="data-section">
+        <div class="table-responsive">
+          <table class="crm-table">
+            <thead>
+              <tr>
+                <th>Fecha / Hora</th>
+                <th>Empresa &amp; Contacto</th>
+                <th>Score &amp; Presupuesto</th>
+                <th>Ciudades de Interés</th>
+                <th>Dolor Comercial Declarado</th>
+                <th>Estado del Embudo</th>
+                <th>Acciones de Venta</th>
+              </tr>
+            </thead>
+            <tbody id="leadsTableBody">
+              <tr>
+                <td colspan="7" class="empty-state">Cargando prospectos desde Supabase...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Fila 4B: Vista Tablero Kanban (Embudo de Ventas Visual) -->
+      <section id="kanbanViewSection" class="kanban-section" style="display: none;">
+        <div class="kanban-board" id="kanbanBoard">
+          <!-- Renderizado dinámico por columnas: nuevo, contactado, negociacion, ganado, descartado -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ==========================================
+       MODAL 1: FICHA DETALLADA Y NOTAS DEL LEAD
+       ========================================== -->
+  <div id="leadDetailModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div>
+          <span class="modal-badge" id="modalLeadScoreBadge">PRIORIDAD ALTA</span>
+          <h2 id="modalEmpresaTitle">Nombre de Empresa</h2>
+          <p id="modalContactoSub">Contacto - Cargo</p>
+        </div>
+        <button type="button" class="modal-close" id="closeDetailModalBtn">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">Correo Corporativo</span>
+            <strong id="modalEmail">-</strong>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Teléfono / WhatsApp</span>
+            <strong id="modalTelefono">-</strong>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Presupuesto Mensual</span>
+            <strong id="modalPresupuesto">-</strong>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Fecha de Registro</span>
+            <strong id="modalFecha">-</strong>
+          </div>
+        </div>
+
+        <div class="detail-block">
+          <span class="detail-label">Plazas / Ciudades Seleccionadas</span>
+          <div id="modalCiudades" class="city-tags-wrap"></div>
+        </div>
+
+        <div class="detail-block">
+          <span class="detail-label">Dolor Principal / Objetivo Comercial</span>
+          <p id="modalDolor" class="pain-highlight"></p>
+        </div>
+
+        <div class="detail-block">
+          <label for="modalEstadoSelect" class="detail-label">Estado Actual en el Embudo de Ventas</label>
+          <select id="modalEstadoSelect" class="modal-select">
+            <option value="nuevo">🔵 Nuevo (Pendiente de primer contacto)</option>
+            <option value="contactado">🟡 Contactado (En conversación inicial)</option>
+            <option value="negociacion">🟣 En Negociación (Mapa y cotización enviados)</option>
+            <option value="ganado">🟢 Cerrado / Ganado (Contrato firmado)</option>
+            <option value="descartado">🔴 Descalificado / Presupuesto insuficiente</option>
+          </select>
+        </div>
+
+        <div class="detail-block">
+          <label for="modalNotasInput" class="detail-label">📝 Bitácora / Notas Internas del Administrador</label>
+          <textarea
+            id="modalNotasInput"
+            rows="4"
+            class="modal-textarea"
+            placeholder="Escribe aquí acuerdos telefónicos, ubicaciones de vallas propuestas, descuentos o fecha de próxima reunión..."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <a href="#" id="modalWhatsappBtn" target="_blank" rel="noopener" class="btn-whatsapp-modal">
+          📲 Abrir WhatsApp con Propuesta Pre-cargada
+        </a>
+        <div class="modal-footer-right">
+          <button type="button" id="saveLeadChangesBtn" class="btn-save-modal">💾 Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL 2: REGISTRAR PROSPECTO MANUALMENTE
+       ========================================== -->
+  <div id="newLeadModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div>
+          <span class="modal-badge">INGRESO DIRECTO CRM</span>
+          <h2>Registrar Prospecto Manual</h2>
+          <p>Añade un cliente recibido por llamada telefónica o reunión directa a Supabase.</p>
+        </div>
+        <button type="button" class="modal-close" id="closeNewLeadModalBtn">✕</button>
+      </div>
+
+      <form id="manualLeadForm" class="modal-body">
+        <div class="detail-grid">
+          <div class="form-group">
+            <label for="mNombre">Nombre Completo *</label>
+            <input type="text" id="mNombre" required placeholder="Ej. Roberto Gómez" />
+          </div>
+          <div class="form-group">
+            <label for="mEmpresa">Empresa / Marca *</label>
+            <input type="text" id="mEmpresa" required placeholder="Ej. Banco Pichincha" />
+          </div>
+          <div class="form-group">
+            <label for="mCargo">Cargo Ejecutivo</label>
+            <input type="text" id="mCargo" placeholder="Ej. Gerente de Marca" />
+          </div>
+          <div class="form-group">
+            <label for="mTelefono">WhatsApp / Teléfono *</label>
+            <input type="tel" id="mTelefono" required placeholder="+593 99 123 4567" />
+          </div>
+          <div class="form-group">
+            <label for="mEmail">Correo Corporativo *</label>
+            <input type="email" id="mEmail" required placeholder="contacto@empresa.com" />
+          </div>
+          <div class="form-group">
+            <label for="mPresupuesto">Rango de Presupuesto *</label>
+            <select id="mPresupuesto" required>
+              <option value="Menos de $1,500">Menos de $1,500 / mes</option>
+              <option value="$1,500 - $3,500">$1,500 – $3,500 / mes</option>
+              <option value="$3,500 - $7,000" selected>$3,500 – $7,000 / mes</option>
+              <option value="Más de $7,000">Más de $7,000 / mes</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 12px;">
+          <label for="mCiudad">Ciudad Principal *</label>
+          <select id="mCiudad" required>
+            <option value="Quito (Superficie)">Quito (Superficie)</option>
+            <option value="Guayaquil & Samborondón">Guayaquil &amp; Samborondón</option>
+            <option value="Metro de Quito (Exclusivo)">Metro de Quito (Exclusivo)</option>
+            <option value="Cuenca & Región Austro">Cuenca &amp; Región Austro</option>
+            <option value="Ejes Viales / Carreteras">Ejes Viales / Carreteras</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-top: 12px;">
+          <label for="mDolor">Dolor Principal / Objetivo *</label>
+          <select id="mDolor" required>
+            <option value="Notoriedad y posicionamiento de marca líder">Notoriedad y posicionamiento de marca líder</option>
+            <option value="Lanzamiento de nuevo producto / apertura">Lanzamiento de nuevo producto / apertura</option>
+            <option value="Atraer tráfico físico a locales comerciales">Atraer tráfico físico a locales comerciales</option>
+            <option value="Baja rentabilidad en anuncios digitales (Meta/Google)">Baja rentabilidad en anuncios digitales (Meta/Google)</option>
+          </select>
+        </div>
+
+        <div class="modal-footer" style="margin-top: 20px; padding-top: 16px;">
+          <button type="button" class="btn-action btn-outline-sm" id="cancelNewLeadBtn">Cancelar</button>
+          <button type="submit" class="btn-save-modal" id="submitManualLeadBtn">＋ Guardar en Supabase</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL 3: SEGURIDAD Y CREDENCIALES ADMIN
+       ========================================== -->
+  <div id="securityModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-panel modal-sm">
+      <div class="modal-header">
+        <div>
+          <span class="modal-badge">SEGURIDAD DEL SISTEMA</span>
+          <h2>Control de Acceso Administrador</h2>
+          <p>Personaliza tu correo y contraseña maestra para bloquear el panel.</p>
+        </div>
+        <button type="button" class="modal-close" id="closeSecurityModalBtn">✕</button>
+      </div>
+
+      <form id="securityForm" class="modal-body">
+        <div class="form-group">
+          <label for="secAdminEmail">Correo de Administrador Autorizado</label>
+          <input type="email" id="secAdminEmail" required />
+        </div>
+        <div class="form-group" style="margin-top: 14px;">
+          <label for="secNewPassword">Nueva Contraseña Maestra</label>
+          <input type="password" id="secNewPassword" required placeholder="Mínimo 6 caracteres" minlength="6" />
+        </div>
+        <div class="modal-footer" style="margin-top: 20px;">
+          <button type="submit" class="btn-save-modal">🔐 Actualizar Credenciales</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="adminToast" class="admin-toast" style="display: none;"></div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
