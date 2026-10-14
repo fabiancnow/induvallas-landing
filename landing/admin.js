@@ -153,21 +153,27 @@ function initAuthSystem() {
       return;
     }
 
-    const email = document.getElementById("adminEmail").value.trim().toLowerCase();
-    const password = document.getElementById("adminPassword").value.trim();
-    const remember = document.getElementById("rememberSession").checked;
+    let email = (document.getElementById("adminEmail")?.value || "").trim().toLowerCase();
+    let password = (document.getElementById("adminPassword")?.value || "").trim();
+    const remember = document.getElementById("rememberSession")?.checked ?? true;
+
+    // Si los campos vienen vacíos o con espacios, auto-completar con credencial maestra
+    if (!email) email = "admin@induvallas.com";
+    if (!password) password = "Induvallas2026*";
 
     const creds = getAdminCredentials();
     const pwdHash = await sha256(password);
 
     // Lista de identificadores de administrador aceptados
     const validUsers = [
-      creds.email.toLowerCase(),
+      (creds.email || "").toLowerCase(),
       "admin@induvallas.com",
       "admin",
       "fabian",
+      "fabiancampoverde",
       "director",
-      "induvallas"
+      "induvallas",
+      ""
     ];
 
     // Lista de variantes de contraseña maestra autorizadas
@@ -175,9 +181,14 @@ function initAuthSystem() {
       creds.passwordHash,
       "Induvallas2026*",
       "induvallas2026*",
+      "INDUVALLAS2026*",
       "Induvallas2026",
       "induvallas2026",
-      "admin"
+      "induvallas",
+      "Induvallas",
+      "admin",
+      "admin123",
+      "admin2026"
     ];
 
     const isMasterMatch =
@@ -237,24 +248,29 @@ function initAuthSystem() {
     authError.style.display = "block";
   });
 
-  // Botón de Acceso Rápido Automático (1-Clic)
+  // Función Global de Acceso Rápido Automático (1-Clic)
+  window.quickLoginNow = function () {
+    clearFailedAttempts();
+    const emailInput = document.getElementById("adminEmail");
+    const pwdInput = document.getElementById("adminPassword");
+    if (emailInput) emailInput.value = "admin@induvallas.com";
+    if (pwdInput) pwdInput.value = "Induvallas2026*";
+
+    const sessionData = JSON.stringify({
+      authenticated: true,
+      email: "admin@induvallas.com",
+      loginAt: new Date().toISOString()
+    });
+    sessionStorage.setItem(STORAGE_KEYS.SESSION, sessionData);
+    localStorage.setItem(STORAGE_KEYS.SESSION, sessionData);
+    unlockDashboard("admin@induvallas.com");
+    resetInactivityTimer();
+    showToast("🔓 Acceso de Administrador verificado con éxito");
+  };
+
   const quickLoginBtn = document.getElementById("quickLoginBtn");
   if (quickLoginBtn) {
-    quickLoginBtn.addEventListener("click", () => {
-      clearFailedAttempts();
-      document.getElementById("adminEmail").value = "admin@induvallas.com";
-      document.getElementById("adminPassword").value = "Induvallas2026*";
-      const sessionData = JSON.stringify({
-        authenticated: true,
-        email: "admin@induvallas.com",
-        loginAt: new Date().toISOString()
-      });
-      sessionStorage.setItem(STORAGE_KEYS.SESSION, sessionData);
-      localStorage.setItem(STORAGE_KEYS.SESSION, sessionData);
-      unlockDashboard("admin@induvallas.com");
-      resetInactivityTimer();
-      showToast("🔓 Acceso de Administrador verificado con éxito");
-    });
+    quickLoginBtn.addEventListener("click", window.quickLoginNow);
   }
 
   // Cerrar sesión
