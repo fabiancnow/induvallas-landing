@@ -22,19 +22,22 @@ document.addEventListener("DOMContentLoaded", () => {
     feedback.style.display = "none";
     feedback.className = "form-feedback";
 
-    // Extraer datos del formulario
-    const nombre = document.getElementById("nombre").value.trim();
-    const empresa = document.getElementById("empresa").value.trim();
-    const cargo = document.getElementById("cargo").value.trim();
-    const email = document.getElementById("email").value.trim();
-    const telefono = document.getElementById("telefono").value.trim();
+    // Extraer datos del formulario y sanitizar
+    const sanitizeText = (val) => String(val || "").replace(/[<>]/g, "").trim();
+
+    const nombre = sanitizeText(document.getElementById("nombre").value);
+    const empresa = sanitizeText(document.getElementById("empresa").value);
+    const cargo = sanitizeText(document.getElementById("cargo").value);
+    const email = document.getElementById("email").value.trim().toLowerCase();
+    const telefono = sanitizeText(document.getElementById("telefono").value);
     const presupuesto = document.getElementById("presupuesto").value;
     const necesidad_principal = document.getElementById("necesidad_principal").value;
+    const consentimiento = document.getElementById("consentimiento_datos")?.checked;
 
     // Obtener ciudades seleccionadas
     const checkedCiudades = Array.from(
       document.querySelectorAll('input[name="ciudades"]:checked')
-    ).map((cb) => cb.value);
+    ).map((cb) => sanitizeText(cb.value));
 
     // Validación básica de campos requeridos
     if (!nombre || !empresa || !email || !telefono || !presupuesto || !necesidad_principal) {
@@ -42,8 +45,28 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    // Validación de formato de correo electrónico
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(email)) {
+      showFeedback("Por favor ingresa un correo corporativo válido (ejemplo: contacto@empresa.com).", "error");
+      return;
+    }
+
+    // Validación de teléfono
+    const cleanDigits = telefono.replace(/\D/g, "");
+    if (cleanDigits.length < 8) {
+      showFeedback("Por favor ingresa un número de teléfono o WhatsApp válido de al menos 8 dígitos.", "error");
+      return;
+    }
+
     if (checkedCiudades.length === 0) {
       showFeedback("Por favor selecciona al menos una ciudad o zona de interés.", "error");
+      return;
+    }
+
+    // Validación obligatoria de Consentimiento LOPDP
+    if (!consentimiento) {
+      showFeedback("Para procesar tu cotización debes autorizar el tratamiento de datos personales conforme a la LOPDP marcando la casilla.", "error");
       return;
     }
 
@@ -66,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       // Inserción directa en la API REST de Supabase (PostgREST)
-      const response = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/leads`, {
+      let response = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/leads`, {
         method: "POST",
         headers: {
           "apikey": SUPABASE_CONFIG.anonKey,
@@ -84,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Éxito
       showFeedback(
-        `✅ ¡Excelente, ${nombre}! Tu solicitud para "${empresa}" ha sido registrada. Un planner comercial se comunicará contigo al ${telefono} con el mapa de ubicaciones disponibles.`,
+        `✅ ¡Excelente, ${nombre}! Tu solicitud para "${empresa}" ha sido registrada con respaldo legal LOPDP. Un planner comercial se comunicará contigo al ${telefono}.`,
         "success"
       );
       form.reset();

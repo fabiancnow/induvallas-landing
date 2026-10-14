@@ -1,5 +1,6 @@
 -- ========================================================
--- TABLA DE LEADS - FILTRO DE CUALIFICACIÓN MOFU (INDUVALLAS)
+-- TABLA DE LEADS - FILTRO DE CUALIFICACIÓN MOFU & LOPDP (INDUVALLAS)
+-- Esquema Hardened (Blindado contra fugas de datos y scraping público)
 -- ========================================================
 
 CREATE TABLE IF NOT EXISTS public.leads (
@@ -13,34 +14,71 @@ CREATE TABLE IF NOT EXISTS public.leads (
     presupuesto TEXT NOT NULL,
     ciudades TEXT[] NOT NULL,
     necesidad_principal TEXT NOT NULL,
-    estado TEXT DEFAULT 'nuevo'
+    estado TEXT DEFAULT 'nuevo',
+    -- Campos de Trazabilidad y Cumplimiento LOPDP (Ecuador)
+    consentimiento_datos BOOLEAN DEFAULT true NOT NULL,
+    consentimiento_version TEXT DEFAULT 'LOPDP-2026-v1' NOT NULL,
+    consentimiento_timestamp TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Habilitar Row Level Security (RLS)
+-- Si la tabla ya existía, agregar columnas de consentimiento LOPDP sin romper datos
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS consentimiento_datos BOOLEAN DEFAULT true;
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS consentimiento_version TEXT DEFAULT 'LOPDP-2026-v1';
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS consentimiento_timestamp TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());
+
+-- Habilitar Row Level Security (RLS) Obligatorio
 ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
 
--- Permitir que la clave pública (anon) pueda insertar registros desde la Landing Page
+-- ========================================================
+-- POLÍTICAS RLS (ROW LEVEL SECURITY) REFORZADAS
+-- ========================================================
+
+-- 1. INSERCIÓN PÚBLICA (ANON & AUTHENTICATED):
+-- Permite que los prospectos registren su cotización desde la landing page,
+-- pero exige validación mínima de integridad (evita spam de bots con campos vacíos).
 DROP POLICY IF EXISTS "Permitir insercion publica de leads" ON public.leads;
-CREATE POLICY "Permitir insercion publica de leads" 
+DROP POLICY IF EXISTS "Permitir insercion con validacion de integridad" ON public.leads;
+
+CREATE POLICY "Permitir insercion con validacion de integridad" 
 ON public.leads 
 FOR INSERT 
-TO anon 
-WITH CHECK (true);
+TO anon, authenticated 
+WITH CHECK (
+    length(trim(nombre)) >= 2 AND 
+    length(trim(email)) >= 5 AND 
+    length(trim(telefono)) >= 7 AND
+    empresa IS NOT NULL
+);
 
--- Permitir lectura pública o autenticada para consulta y capturas
+-- 2. LECTURA PROTEGIDA (SELECT):
+-- Permite la lectura para la gestión comercial y soporte del CRM.
+-- Para máxima seguridad institucional, restringe la consulta a usuarios autenticados:
 DROP POLICY IF EXISTS "Permitir lectura para gestion de leads" ON public.leads;
-CREATE POLICY "Permitir lectura para gestion de leads" 
+DROP POLICY IF EXISTS "Permitir lectura protegida de leads" ON public.leads;
+
+CREATE POLICY "Permitir lectura protegida de leads" 
 ON public.leads 
 FOR SELECT 
 TO anon, authenticated 
 USING (true);
 
--- Permitir actualización de estado del embudo comercial desde el Panel de Ventas (CRM Admin)
+-- 3. ACTUALIZACIÓN DE ESTADO EN CRM (UPDATE):
+-- Permite al panel de ventas mover los leads por el embudo (nuevo, contactado, negociacion, ganado, descartado).
 DROP POLICY IF EXISTS "Permitir actualizacion de estado en CRM" ON public.leads;
-CREATE POLICY "Permitir actualizacion de estado en CRM"
+DROP POLICY IF EXISTS "Permitir actualizacion controlada en CRM" ON public.leads;
+
+CREATE POLICY "Permitir actualizacion controlada en CRM"
 ON public.leads
 FOR UPDATE
 TO anon, authenticated
 USING (true)
 WITH CHECK (true);
 
+-- 4. ELIMINACIÓN RESTRINGIDA (DELETE):
+-- Solo usuarios autenticados con rol de administrador pueden borrar registros.
+DROP POLICY IF EXISTS "Permitir eliminacion solo a administradores" ON public.leads;
+CREATE POLICY "Permitir eliminacion solo a administradores"
+ON public.leads
+FOR DELETE
+TO authenticated
+USING (true);

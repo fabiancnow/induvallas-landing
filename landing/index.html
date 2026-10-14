@@ -269,28 +269,28 @@
           <div class="form-row">
             <div class="form-group">
               <label for="nombre">Nombre y Apellido <span class="req">*</span></label>
-              <input type="text" id="nombre" name="nombre" placeholder="Ej: Esteban Morales" required>
+              <input type="text" id="nombre" name="nombre" placeholder="Ej: Esteban Morales" maxlength="100" autocomplete="name" required>
             </div>
             <div class="form-group">
               <label for="empresa">Empresa o Marca <span class="req">*</span></label>
-              <input type="text" id="empresa" name="empresa" placeholder="Ej: Corporación El Rosado" required>
+              <input type="text" id="empresa" name="empresa" placeholder="Ej: Corporación El Rosado" maxlength="100" autocomplete="organization" required>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label for="cargo">Cargo / Rol en la empresa</label>
-              <input type="text" id="cargo" name="cargo" placeholder="Ej: Director de Marketing / Gerente">
+              <input type="text" id="cargo" name="cargo" placeholder="Ej: Director de Marketing / Gerente" maxlength="100" autocomplete="organization-title">
             </div>
             <div class="form-group">
               <label for="email">Correo Corporativo <span class="req">*</span></label>
-              <input type="email" id="email" name="email" placeholder="esteban@empresa.com" required>
+              <input type="email" id="email" name="email" placeholder="esteban@empresa.com" maxlength="120" autocomplete="email" required>
             </div>
           </div>
 
           <div class="form-group">
             <label for="telefono">WhatsApp / Teléfono Directo <span class="req">*</span></label>
-            <input type="tel" id="telefono" name="telefono" placeholder="+593 99 999 9999" required>
+            <input type="tel" id="telefono" name="telefono" placeholder="+593 99 999 9999" maxlength="25" autocomplete="tel" required>
           </div>
 
           <!-- FILTRO CLAVE 1: Presupuesto (Cualifica capacidad económica) -->
@@ -325,15 +325,15 @@
               </label>
               <label class="custom-checkbox">
                 <input type="checkbox" name="ciudades" value="Guayaquil y Samborondón">
-                <span>Guayaquil & Samborondón</span>
+                <span>Guayaquil &amp; Samborondón</span>
               </label>
               <label class="custom-checkbox">
-                <input type="checkbox" name="ciudades" value="Cuenca & Región Austro">
-                <span>Cuenca & Austro</span>
+                <input type="checkbox" name="ciudades" value="Cuenca &amp; Región Austro">
+                <span>Cuenca &amp; Austro</span>
               </label>
               <label class="custom-checkbox">
-                <input type="checkbox" name="ciudades" value="Manta & Costa">
-                <span>Manta & Costa</span>
+                <input type="checkbox" name="ciudades" value="Manta &amp; Costa">
+                <span>Manta &amp; Costa</span>
               </label>
               <label class="custom-checkbox">
                 <input type="checkbox" name="ciudades" value="Circuito Nacional (Ecuador Completo)">
@@ -357,10 +357,22 @@
             </select>
           </div>
 
+          <!-- Consentimiento Expreso de Datos Personales (LOPDP Ecuador) -->
+          <div class="form-group consent-group">
+            <label class="consent-label" for="consentimiento_datos">
+              <input type="checkbox" id="consentimiento_datos" name="consentimiento_datos" required>
+              <span>
+                He leído y autorizo de forma expresa el tratamiento de mis datos personales y comerciales conforme a la
+                <a href="politica-privacidad.html" target="_blank" class="legal-text-link">Política de Privacidad (LOPDP Ecuador)</a> y los
+                <a href="terminos-condiciones.html" target="_blank" class="legal-text-link">Términos y Condiciones</a> de Induvallas S.A. <span class="req">*</span>
+              </span>
+            </label>
+          </div>
+
           <!-- Botón de Envío -->
           <div class="form-actions">
             <button type="submit" id="submitBtn" class="btn btn-primary btn-block btn-lg">
-              <span class="btn-text">Verificar Disponibilidad & Enviar Solicitud</span>
+              <span class="btn-text">Verificar Disponibilidad &amp; Enviar Solicitud</span>
               <span class="btn-loader" style="display: none;">Procesando solicitud...</span>
             </button>
           </div>
@@ -368,7 +380,7 @@
           <div id="formFeedback" class="form-feedback" style="display: none;"></div>
 
           <p class="form-privacy">
-            🔒 Respetamos tu privacidad. Tus datos serán tratados exclusivamente por ejecutivos de cuentas corporativas de Induvallas.
+            🔒 <strong>Cumplimiento LOPDP:</strong> Tus datos serán tratados exclusivamente por la Dirección Comercial de Induvallas S.A. bajo estándares de confidencialidad y no serán transferidos a terceros.
           </p>
         </form>
       </div>
@@ -438,7 +450,12 @@
       <div class="footer-info">
         <p>📍 Matriz: Av. Eloy Alfaro N72-20, Quito, Ecuador</p>
         <p>📞 Teléfono comercial: +593 2 247 1800 | 🌐 <a href="https://induvallas.com" target="_blank" rel="noopener">induvallas.com</a></p>
-        <p class="copyright">© 2026 Induvallas S.A. Todos los derechos reservados. · <a href="admin.html" class="admin-access-link" title="Acceso exclusivo para el Administrador de Ventas">🔒 Panel de Ventas (Admin)</a></p>
+        <p class="copyright">
+          © 2026 Induvallas S.A. Todos los derechos reservados. ·
+          <a href="politica-privacidad.html" class="footer-legal-link">Política de Privacidad (LOPDP)</a> ·
+          <a href="terminos-condiciones.html" class="footer-legal-link">Términos y Condiciones</a> ·
+          <a href="admin.html" class="admin-access-link" title="Acceso exclusivo para el Administrador de Ventas">🔒 Panel de Ventas (Admin)</a>
+        </p>
       </div>
     </div>
   </footer>

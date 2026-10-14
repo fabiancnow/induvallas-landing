@@ -28,8 +28,17 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ========================================================
-// 1. SISTEMA DE AUTENTICACIÓN EXCLUSIVA DE ADMINISTRADOR
+// 1. SISTEMA DE AUTENTICACIÓN Y SEGURIDAD DEL ADMINISTRADOR
 // ========================================================
+
+// Función Criptográfica SHA-256
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 function getAdminCredentials() {
   try {
     const saved = localStorage.getItem(STORAGE_KEYS.CREDENTIALS);
@@ -39,6 +48,61 @@ function getAdminCredentials() {
   }
   return DEFAULT_ADMIN;
 }
+
+function getAuthHeader() {
+  try {
+    const sessionStr = sessionStorage.getItem(STORAGE_KEYS.SESSION) || localStorage.getItem(STORAGE_KEYS.SESSION);
+    if (sessionStr) {
+      const parsed = JSON.parse(sessionStr);
+      if (parsed.token) return `Bearer ${parsed.token}`;
+    }
+  } catch (e) {}
+  return `Bearer ${SUPABASE_CONFIG.anonKey}`;
+}
+
+// Control Anti-Fuerza Bruta
+function checkBruteForceLock() {
+  const lockUntil = parseInt(sessionStorage.getItem("admin_lock_until") || "0", 10);
+  if (lockUntil && Date.now() < lockUntil) {
+    const remainingSec = Math.ceil((lockUntil - Date.now()) / 1000);
+    return `🔒 Acceso bloqueado temporalmente por seguridad tras múltiples intentos fallidos. Intenta nuevamente en ${remainingSec} segundos.`;
+  }
+  return null;
+}
+
+function recordFailedAttempt() {
+  const attempts = parseInt(sessionStorage.getItem("admin_failed_attempts") || "0", 10) + 1;
+  sessionStorage.setItem("admin_failed_attempts", attempts);
+  if (attempts >= 5) {
+    sessionStorage.setItem("admin_lock_until", Date.now() + (5 * 60 * 1000)); // 5 minutos de bloqueo
+    return "🔒 Has superado el límite de 5 intentos fallidos. El panel de administración ha sido bloqueado por 5 minutos.";
+  }
+  return `⛔ Acceso denegado: Correo o clave maestra incorrectos. (Intento ${attempts} de 5 antes de bloqueo).`;
+}
+
+function clearFailedAttempts() {
+  sessionStorage.removeItem("admin_failed_attempts");
+  sessionStorage.removeItem("admin_lock_until");
+}
+
+// Timeout de Inactividad de Sesión (45 min)
+let inactivityTimer = null;
+function resetInactivityTimer() {
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(() => {
+    const hasSession = sessionStorage.getItem(STORAGE_KEYS.SESSION) || localStorage.getItem(STORAGE_KEYS.SESSION);
+    if (hasSession) {
+      sessionStorage.removeItem(STORAGE_KEYS.SESSION);
+      localStorage.removeItem(STORAGE_KEYS.SESSION);
+      alert("🛡️ Por seguridad y cumplimiento de la LOPDP, tu sesión de administrador se ha cerrado automáticamente tras 45 minutos de inactividad.");
+      location.reload();
+    }
+  }, 45 * 60 * 1000);
+}
+
+["mousedown", "keydown", "scroll", "touchstart"].forEach((evt) => {
+  window.addEventListener(evt, resetInactivityTimer, { passive: true });
+});
 
 function initAuthSystem() {
   const authOverlay = document.getElementById("authOverlay");
@@ -68,6 +132,7 @@ function initAuthSystem() {
       const parsed = JSON.parse(activeSession);
       if (parsed && parsed.authenticated) {
         unlockDashboard(parsed.email);
+        resetInactivityTimer();
         return;
       }
     } catch (e) {
@@ -75,19 +140,33 @@ function initAuthSystem() {
     }
   }
 
-  // Manejo de Login
+  // Manejo de Login con Blindaje de Seguridad
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     authError.style.display = "none";
+
+    // Validar bloqueo por fuerza bruta
+    const lockMessage = checkBruteForceLock();
+    if (lockMessage) {
+      authError.textContent = lockMessage;
+      authError.style.display = "block";
+      return;
+    }
 
     const email = document.getElementById("adminEmail").value.trim().toLowerCase();
     const password = document.getElementById("adminPassword").value;
     const remember = document.getElementById("rememberSession").checked;
 
     const creds = getAdminCredentials();
+    const pwdHash = await sha256(password);
 
-    // Verificación 1: Credencial Maestra del Administrador
-    if (email === creds.email.toLowerCase() && password === creds.passwordHash) {
+    // Verificación 1: Credencial Maestra del Administrador (Texto o Hash SHA-256)
+    const isMasterMatch =
+      email === creds.email.toLowerCase() &&
+      (password === creds.passwordHash || pwdHash === creds.passwordHash);
+
+    if (isMasterMatch) {
+      clearFailedAttempts();
       const sessionData = JSON.stringify({
         authenticated: true,
         email,
@@ -98,11 +177,12 @@ function initAuthSystem() {
         localStorage.setItem(STORAGE_KEYS.SESSION, sessionData);
       }
       unlockDashboard(email);
-      showToast("🔓 Bienvenido al Panel de Ventas de Induvallas");
+      resetInactivityTimer();
+      showToast("🔓 Acceso de Administrador verificado con éxito");
       return;
     }
 
-    // Verificación 2: Intentar Supabase Auth nativo por si el admin creó usuario en Supabase
+    // Verificación 2: Intentar Supabase Auth nativo (JWT Bearer para RLS reforzado)
     try {
       const res = await fetch(`${SUPABASE_CONFIG.url}/auth/v1/token?grant_type=password`, {
         method: "POST",
@@ -114,6 +194,7 @@ function initAuthSystem() {
       });
 
       if (res.ok) {
+        clearFailedAttempts();
         const data = await res.json();
         const sessionData = JSON.stringify({
           authenticated: true,
@@ -124,14 +205,16 @@ function initAuthSystem() {
         sessionStorage.setItem(STORAGE_KEYS.SESSION, sessionData);
         if (remember) localStorage.setItem(STORAGE_KEYS.SESSION, sessionData);
         unlockDashboard(email);
-        showToast("🔓 Sesión iniciada con Supabase Auth");
+        resetInactivityTimer();
+        showToast("🔓 Sesión autenticada con Supabase Auth (JWT)");
         return;
       }
     } catch (err) {
-      // Continuar a mensaje de error estándar
+      // Continuar a registro de fallo
     }
 
-    authError.textContent = "⛔ Acceso denegado: Correo o clave maestra incorrectos.";
+    const errorMsg = recordFailedAttempt();
+    authError.textContent = errorMsg;
     authError.style.display = "block";
   });
 
@@ -140,9 +223,14 @@ function initAuthSystem() {
     logoutBtn.addEventListener("click", () => {
       sessionStorage.removeItem(STORAGE_KEYS.SESSION);
       localStorage.removeItem(STORAGE_KEYS.SESSION);
+      clearTimeout(inactivityTimer);
       adminApp.style.display = "none";
       authOverlay.style.display = "flex";
       document.getElementById("adminPassword").value = "";
+      showToast("🔒 Sesión de administrador cerrada con éxito");
+    });
+  }
+}
     });
   }
 }
@@ -208,7 +296,7 @@ async function fetchLeadsFromSupabase() {
         method: "GET",
         headers: {
           "apikey": SUPABASE_CONFIG.anonKey,
-          "Authorization": `Bearer ${SUPABASE_CONFIG.anonKey}`,
+          "Authorization": getAuthHeader(),
           "Content-Type": "application/json"
         }
       }
@@ -507,7 +595,7 @@ window.handleQuickStatusChange = async function (leadId, newStatus) {
       method: "PATCH",
       headers: {
         "apikey": SUPABASE_CONFIG.anonKey,
-        "Authorization": `Bearer ${SUPABASE_CONFIG.anonKey}`,
+        "Authorization": getAuthHeader(),
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ estado: newStatus })
@@ -627,7 +715,7 @@ function initDashboardEvents() {
         method: "PATCH",
         headers: {
           "apikey": SUPABASE_CONFIG.anonKey,
-          "Authorization": `Bearer ${SUPABASE_CONFIG.anonKey}`,
+          "Authorization": getAuthHeader(),
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ estado: newEstado })
@@ -674,7 +762,7 @@ function initDashboardEvents() {
         method: "POST",
         headers: {
           "apikey": SUPABASE_CONFIG.anonKey,
-          "Authorization": `Bearer ${SUPABASE_CONFIG.anonKey}`,
+          "Authorization": getAuthHeader(),
           "Content-Type": "application/json",
           "Prefer": "return=representation"
         },
@@ -707,18 +795,19 @@ function initDashboardEvents() {
     securityModal.style.display = "none";
   });
 
-  document.getElementById("securityForm")?.addEventListener("submit", (e) => {
+  document.getElementById("securityForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const newEmail = document.getElementById("secAdminEmail").value.trim();
     const newPwd = document.getElementById("secNewPassword").value;
+    const hashedPwd = await sha256(newPwd);
 
     localStorage.setItem(
       STORAGE_KEYS.CREDENTIALS,
-      JSON.stringify({ email: newEmail, passwordHash: newPwd })
+      JSON.stringify({ email: newEmail, passwordHash: hashedPwd })
     );
     document.getElementById("loggedAdminName").textContent = newEmail;
     securityModal.style.display = "none";
-    showToast("🔐 Credenciales de Administrador actualizadas con éxito");
+    showToast("🔐 Credenciales actualizadas y protegidas con hash criptográfico SHA-256");
   });
 
   // Exportar a CSV / Excel

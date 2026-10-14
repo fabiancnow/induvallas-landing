@@ -951,6 +951,60 @@ select:focus {
   border: 1px solid #fecaca;
 }
 
+.consent-group {
+  margin-top: 18px;
+  background: #ffffff;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.consent-label {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.82rem !important;
+  font-weight: 500 !important;
+  color: var(--text-color);
+  line-height: 1.45;
+  cursor: pointer;
+  margin-bottom: 0 !important;
+}
+
+.consent-label input[type="checkbox"] {
+  accent-color: var(--accent-orange);
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.legal-text-link {
+  color: var(--primary-color);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s;
+}
+
+.legal-text-link:hover {
+  color: var(--accent-orange);
+}
+
+.footer-legal-link {
+  color: #cbd5e1;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-size: 0.85rem;
+  margin: 0 4px;
+  transition: color 0.2s;
+}
+
+.footer-legal-link:hover {
+  color: var(--accent-orange);
+}
+
 .form-privacy {
   font-size: 0.78rem;
   color: var(--text-light);
