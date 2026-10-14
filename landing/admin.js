@@ -270,9 +270,6 @@ function initAuthSystem() {
     });
   }
 }
-    });
-  }
-}
 
 function unlockDashboard(email) {
   document.getElementById("authOverlay").style.display = "none";
