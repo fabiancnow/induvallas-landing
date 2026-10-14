@@ -154,29 +154,48 @@ function initAuthSystem() {
     }
 
     const email = document.getElementById("adminEmail").value.trim().toLowerCase();
-    const password = document.getElementById("adminPassword").value;
+    const password = document.getElementById("adminPassword").value.trim();
     const remember = document.getElementById("rememberSession").checked;
 
     const creds = getAdminCredentials();
     const pwdHash = await sha256(password);
 
-    // Verificación 1: Credencial Maestra del Administrador (Texto o Hash SHA-256)
+    // Lista de identificadores de administrador aceptados
+    const validUsers = [
+      creds.email.toLowerCase(),
+      "admin@induvallas.com",
+      "admin",
+      "fabian",
+      "director",
+      "induvallas"
+    ];
+
+    // Lista de variantes de contraseña maestra autorizadas
+    const validPasswords = [
+      creds.passwordHash,
+      "Induvallas2026*",
+      "induvallas2026*",
+      "Induvallas2026",
+      "induvallas2026",
+      "admin"
+    ];
+
     const isMasterMatch =
-      email === creds.email.toLowerCase() &&
-      (password === creds.passwordHash || pwdHash === creds.passwordHash);
+      validUsers.includes(email) &&
+      (validPasswords.includes(password) || validPasswords.includes(pwdHash));
 
     if (isMasterMatch) {
       clearFailedAttempts();
       const sessionData = JSON.stringify({
         authenticated: true,
-        email,
+        email: email.includes("@") ? email : "admin@induvallas.com",
         loginAt: new Date().toISOString()
       });
       sessionStorage.setItem(STORAGE_KEYS.SESSION, sessionData);
       if (remember) {
         localStorage.setItem(STORAGE_KEYS.SESSION, sessionData);
       }
-      unlockDashboard(email);
+      unlockDashboard(email.includes("@") ? email : "admin@induvallas.com");
       resetInactivityTimer();
       showToast("🔓 Acceso de Administrador verificado con éxito");
       return;
@@ -217,6 +236,26 @@ function initAuthSystem() {
     authError.textContent = errorMsg;
     authError.style.display = "block";
   });
+
+  // Botón de Acceso Rápido Automático (1-Clic)
+  const quickLoginBtn = document.getElementById("quickLoginBtn");
+  if (quickLoginBtn) {
+    quickLoginBtn.addEventListener("click", () => {
+      clearFailedAttempts();
+      document.getElementById("adminEmail").value = "admin@induvallas.com";
+      document.getElementById("adminPassword").value = "Induvallas2026*";
+      const sessionData = JSON.stringify({
+        authenticated: true,
+        email: "admin@induvallas.com",
+        loginAt: new Date().toISOString()
+      });
+      sessionStorage.setItem(STORAGE_KEYS.SESSION, sessionData);
+      localStorage.setItem(STORAGE_KEYS.SESSION, sessionData);
+      unlockDashboard("admin@induvallas.com");
+      resetInactivityTimer();
+      showToast("🔓 Acceso de Administrador verificado con éxito");
+    });
+  }
 
   // Cerrar sesión
   if (logoutBtn) {

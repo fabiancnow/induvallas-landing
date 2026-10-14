@@ -176,6 +176,41 @@ body {
   opacity: 1;
 }
 
+.credentials-hint {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  font-size: 0.78rem;
+  color: #92400E;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+}
+
+.hint-text {
+  line-height: 1.4;
+}
+
+.btn-quick-fill {
+  background: var(--primary-navy);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-quick-fill:hover {
+  background: var(--accent-orange);
+  color: var(--dark-navy);
+}
+
 .auth-options {
   display: flex;
   align-items: center;
