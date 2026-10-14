@@ -26,6 +26,11 @@ ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS consentimiento_datos BOOLEAN D
 ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS consentimiento_version TEXT DEFAULT 'LOPDP-2026-v1';
 ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS consentimiento_timestamp TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());
 
+-- Columnas de Gestión Comercial y Pipeline Financiero
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS notas TEXT;
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS temperatura TEXT;
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS valor_estimado NUMERIC;
+
 -- Habilitar Row Level Security (RLS) Obligatorio
 ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
 

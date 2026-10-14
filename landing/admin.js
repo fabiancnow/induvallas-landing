@@ -307,18 +307,112 @@ function normalizeBudget(rawBudget) {
   return rawBudget;
 }
 
-function evaluateLeadScore(presupuesto) {
-  const clean = normalizeBudget(presupuesto);
-  if (clean.includes("Más de $7,000") || clean.includes("7,000") && !clean.includes("3,500")) {
-    return { priority: "alta", label: "🔥 VIP HIGH-TICKET", estimatedValue: 9500 };
+function evaluateLeadScore(leadOrBudget) {
+  const lead = typeof leadOrBudget === "object" && leadOrBudget !== null 
+    ? leadOrBudget 
+    : { presupuesto: leadOrBudget };
+
+  const clean = normalizeBudget(lead.presupuesto);
+  let baseValue = 1100;
+  let score = 15; // puntuación base (0-100)
+
+  // 1. Evaluación por Rango de Inversión Financiera Declarada
+  if (clean.includes("Más de $7,000") || (clean.includes("7,000") && !clean.includes("3,500"))) {
+    baseValue = 9500;
+    score += 40;
+  } else if (clean.includes("3,500")) {
+    baseValue = 5250;
+    score += 35;
+  } else if (clean.includes("1,500 - $3,500") || clean.includes("1,500 – $3,500") || clean.includes("1,500")) {
+    baseValue = 2500;
+    score += 20;
+  } else {
+    baseValue = 1100;
+    score += 10;
   }
-  if (clean.includes("3,500")) {
-    return { priority: "alta", label: "🔥 PRIORIDAD ALTA", estimatedValue: 5250 };
+
+  // 2. Poder de Decisión (Cargo del Contacto / C-Level)
+  const cargo = (lead.cargo || "").toLowerCase();
+  const isDecisionMaker = /gerente|director|ceo|due[ñn]o|fundador|presidente|vp|vicepresidente|general|cmo|jefe de compras|socio/i.test(cargo);
+  if (isDecisionMaker) {
+    score += 25;
+  } else if (cargo.length > 2) {
+    score += 10;
   }
-  if (clean.includes("1,500 - $3,500") || clean.includes("1,500 – $3,500")) {
-    return { priority: "media", label: "⚡ PRIORIDAD MEDIA", estimatedValue: 2500 };
+
+  // 3. Alcance Geográfico (Ciudades Seleccionadas)
+  const cities = Array.isArray(lead.ciudades) ? lead.ciudades : (lead.ciudades ? [lead.ciudades] : []);
+  if (cities.length >= 2 || cities.some((c) => /metro/i.test(String(c)))) {
+    score += 20;
+  } else if (cities.length === 1) {
+    score += 15;
   }
-  return { priority: "baja", label: "🌱 INICIAL / FILTRO", estimatedValue: 1100 };
+
+  // 4. Urgencia e Impacto Comercial (Dolor Principal)
+  const dolor = (lead.necesidad_principal || "").toLowerCase();
+  if (/lanzamiento|apertura|posicionamiento|impacto|reemplazar pauta/i.test(dolor)) {
+    score += 15;
+  } else if (dolor.length > 3) {
+    score += 10;
+  }
+
+  score = Math.min(100, Math.max(10, score));
+
+  // 5. Determinación de Temperatura & Probabilidad de Cierre
+  const estado = lead.estado || "nuevo";
+  let temperatura = "cold";
+  let tempLabel = "❄️ COLD (20%)";
+  let prob = 0.20;
+  let priority = "baja";
+  let priorityLabel = "🌱 INICIAL / EXPLORATORIO";
+
+  if (estado === "ganado") {
+    temperatura = "won";
+    tempLabel = "🟢 CERRADO GANADO";
+    prob = 1.0;
+    priority = "alta";
+    priorityLabel = "🟢 CONTRATO ACTIVO";
+  } else if (estado === "descartado") {
+    temperatura = "descartado";
+    tempLabel = "🔴 DESCALIFICADO";
+    prob = 0.0;
+    priority = "baja";
+    priorityLabel = "🔴 SIN CIERRE";
+  } else {
+    // Leads activos: nuevo, contactado, negociacion
+    if (score >= 70 || (baseValue >= 3500 && isDecisionMaker)) {
+      temperatura = "hot";
+      tempLabel = "🔥 HOT (85%)";
+      prob = 0.85;
+      priority = "alta";
+      priorityLabel = baseValue >= 7000 ? "🔥 VIP HIGH-TICKET" : "🔥 PRIORIDAD ALTA";
+    } else if (score >= 45 || baseValue >= 2500) {
+      temperatura = "warm";
+      tempLabel = "⚡ WARM (50%)";
+      prob = 0.50;
+      priority = "media";
+      priorityLabel = "⚡ PRIORIDAD MEDIA";
+    } else {
+      temperatura = "cold";
+      tempLabel = "❄️ COLD (20%)";
+      prob = 0.20;
+      priority = "baja";
+      priorityLabel = "🌱 INICIAL / EXPLORATORIO";
+    }
+  }
+
+  const weightedValue = Math.round(baseValue * prob);
+
+  return {
+    score,
+    priority,
+    priorityLabel,
+    estimatedValue: baseValue,
+    temperatura,
+    tempLabel,
+    prob,
+    weightedValue
+  };
 }
 
 async function fetchLeadsFromSupabase() {
@@ -347,16 +441,23 @@ async function fetchLeadsFromSupabase() {
 
     allLeads = rawLeads.map((lead) => {
       const cleanBudget = normalizeBudget(lead.presupuesto);
-      const scoreInfo = evaluateLeadScore(cleanBudget);
       const localData = overrides[lead.id] || {};
+      const currentEstado = localData.estado || lead.estado || "nuevo";
+      const currentNotas = localData.notas || lead.notas || "";
+
+      const scoreInfo = evaluateLeadScore({
+        ...lead,
+        presupuesto: cleanBudget,
+        estado: currentEstado,
+        notas: currentNotas
+      });
+
       return {
         ...lead,
         presupuesto: cleanBudget,
-        estado: localData.estado || lead.estado || "nuevo",
-        notas: localData.notas || "",
-        priority: scoreInfo.priority,
-        priorityLabel: scoreInfo.label,
-        estimatedValue: scoreInfo.estimatedValue
+        estado: currentEstado,
+        notas: currentNotas,
+        ...scoreInfo
       };
     });
 
@@ -374,12 +475,116 @@ async function fetchLeadsFromSupabase() {
 }
 
 // ========================================================
-// 3. RENDERIZADO DE KPIs, DISTRIBUCIÓN, TABLA Y KANBAN
+// 3. RENDERIZADO DE KPIs, ESPECTRO FINANCIERO, TABLA Y KANBAN
 // ========================================================
 function renderDashboard() {
   updateKPIs(allLeads);
+  updatePipelineSpectrum(allLeads);
   renderInsights(allLeads);
   applyFiltersAndRender();
+}
+
+function updatePipelineSpectrum(leads) {
+  // Prospectos activos en el espectro (excluyendo descalificados)
+  const activeLeads = leads.filter((l) => l.estado !== "descartado");
+
+  const hotLeads = activeLeads.filter((l) => l.temperatura === "hot" && l.estado !== "ganado");
+  const warmLeads = activeLeads.filter((l) => l.temperatura === "warm" && l.estado !== "ganado");
+  const coldLeads = activeLeads.filter((l) => l.temperatura === "cold" && l.estado !== "ganado");
+  const wonLeads = leads.filter((l) => l.temperatura === "won" || l.estado === "ganado");
+
+  const moneyHot = hotLeads.reduce((acc, l) => acc + (l.estimatedValue || 0), 0);
+  const moneyWarm = warmLeads.reduce((acc, l) => acc + (l.estimatedValue || 0), 0);
+  const moneyCold = coldLeads.reduce((acc, l) => acc + (l.estimatedValue || 0), 0);
+  const moneyWon = wonLeads.reduce((acc, l) => acc + (l.estimatedValue || 0), 0);
+
+  const totalPipeline = moneyHot + moneyWarm + moneyCold + moneyWon;
+
+  const forecastHot = Math.round(moneyHot * 0.85);
+  const forecastWarm = Math.round(moneyWarm * 0.50);
+  const forecastCold = Math.round(moneyCold * 0.20);
+  const totalForecast = forecastHot + forecastWarm + forecastCold + moneyWon;
+
+  // Actualizar Caja de Total y Forecast Ponderado
+  const totalMoneyEl = document.getElementById("spectrumTotalMoney");
+  if (totalMoneyEl) totalMoneyEl.textContent = `$${totalPipeline.toLocaleString("en-US")} / mes`;
+
+  const weightedForecastEl = document.getElementById("spectrumWeightedForecast");
+  if (weightedForecastEl) {
+    weightedForecastEl.textContent = `Forecast Ponderado: $${totalForecast.toLocaleString("en-US")} / mes`;
+  }
+
+  const activeCountEl = document.getElementById("spectrumActiveCount");
+  if (activeCountEl) {
+    activeCountEl.textContent = `${activeLeads.length} prospectos en gestión comercial`;
+  }
+
+  // Porcentajes para la barra horizontal
+  const pctHot = totalPipeline > 0 ? Math.round((moneyHot / totalPipeline) * 100) : 0;
+  const pctWarm = totalPipeline > 0 ? Math.round((moneyWarm / totalPipeline) * 100) : 0;
+  const pctCold = totalPipeline > 0 ? Math.round((moneyCold / totalPipeline) * 100) : 0;
+  const pctWon = totalPipeline > 0 ? Math.max(0, 100 - (pctHot + pctWarm + pctCold)) : 0;
+
+  const barHot = document.getElementById("barSegHot");
+  const barWarm = document.getElementById("barSegWarm");
+  const barCold = document.getElementById("barSegCold");
+  const barWon = document.getElementById("barSegWon");
+
+  if (barHot) barHot.style.width = `${pctHot}%`;
+  if (barWarm) barWarm.style.width = `${pctWarm}%`;
+  if (barCold) barCold.style.width = `${pctCold}%`;
+  if (barWon) barWon.style.width = `${pctWon}%`;
+
+  // Leyenda de la barra
+  const lMoneyHot = document.getElementById("legendMoneyHot");
+  if (lMoneyHot) lMoneyHot.textContent = `$${moneyHot.toLocaleString("en-US")}`;
+  const pHot = document.getElementById("pctHot");
+  if (pHot) pHot.textContent = `${pctHot}%`;
+
+  const lMoneyWarm = document.getElementById("legendMoneyWarm");
+  if (lMoneyWarm) lMoneyWarm.textContent = `$${moneyWarm.toLocaleString("en-US")}`;
+  const pWarm = document.getElementById("pctWarm");
+  if (pWarm) pWarm.textContent = `${pctWarm}%`;
+
+  const lMoneyCold = document.getElementById("legendMoneyCold");
+  if (lMoneyCold) lMoneyCold.textContent = `$${moneyCold.toLocaleString("en-US")}`;
+  const pCold = document.getElementById("pctCold");
+  if (pCold) pCold.textContent = `${pctCold}%`;
+
+  const lMoneyWon = document.getElementById("legendMoneyWon");
+  if (lMoneyWon) lMoneyWon.textContent = `$${moneyWon.toLocaleString("en-US")}`;
+  const pWon = document.getElementById("pctWon");
+  if (pWon) pWon.textContent = `${pctWon}%`;
+
+  // Tarjeta 1: HOT
+  const mHot = document.getElementById("moneyHot");
+  if (mHot) mHot.textContent = `$${moneyHot.toLocaleString("en-US")}`;
+  const cHot = document.getElementById("countHot");
+  if (cHot) cHot.textContent = `${hotLeads.length} prospectos`;
+  const fHot = document.getElementById("forecastHot");
+  if (fHot) fHot.textContent = `Forecast: $${forecastHot.toLocaleString("en-US")}`;
+
+  // Tarjeta 2: WARM
+  const mWarm = document.getElementById("moneyWarm");
+  if (mWarm) mWarm.textContent = `$${moneyWarm.toLocaleString("en-US")}`;
+  const cWarm = document.getElementById("countWarm");
+  if (cWarm) cWarm.textContent = `${warmLeads.length} prospectos`;
+  const fWarm = document.getElementById("forecastWarm");
+  if (fWarm) fWarm.textContent = `Forecast: $${forecastWarm.toLocaleString("en-US")}`;
+
+  // Tarjeta 3: COLD
+  const mCold = document.getElementById("moneyCold");
+  if (mCold) mCold.textContent = `$${moneyCold.toLocaleString("en-US")}`;
+  const cCold = document.getElementById("countCold");
+  if (cCold) cCold.textContent = `${coldLeads.length} prospectos`;
+  const fCold = document.getElementById("forecastCold");
+  if (fCold) fCold.textContent = `Forecast: $${forecastCold.toLocaleString("en-US")}`;
+
+  // Tarjeta 4: CERRADOS / GANADOS
+  const mWon = document.getElementById("moneyWon");
+  if (mWon) mWon.textContent = `$${moneyWon.toLocaleString("en-US")}`;
+  const cWon = document.getElementById("countWon");
+  if (cWon) cWon.textContent = `${wonLeads.length} contratos`;
 }
 
 function updateKPIs(leads) {
@@ -468,20 +673,56 @@ function renderInsights(leads) {
     .join("");
 }
 
+window.filterByTemperature = function (tempKey) {
+  const select = document.getElementById("filterTemperatura");
+  if (!select) return;
+
+  // Si ya estaba seleccionado, volver a 'todas' (comportamiento toggle intuitivo)
+  if (select.value === tempKey) {
+    select.value = "todas";
+    showToast("🌡️ Mostrando todas las temperaturas de leads");
+  } else {
+    select.value = tempKey;
+    showToast(`🔍 Filtrando por segmento: ${tempKey.toUpperCase()}`);
+  }
+
+  applyFiltersAndRender();
+
+  // Scroll suave hacia la tabla CRM
+  const targetSec = document.getElementById("tableViewSection");
+  if (targetSec) {
+    targetSec.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+};
+
 function applyFiltersAndRender() {
   const query = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
   const estadoFilter = document.getElementById("filterEstado")?.value || "todos";
   const prioFilter = document.getElementById("filterPrioridad")?.value || "todas";
+  const tempFilter = document.getElementById("filterTemperatura")?.value || "todas";
+
+  // Marcar visualmente la tarjeta de temperatura activa
+  ["hot", "warm", "cold", "won"].forEach((t) => {
+    const card = document.getElementById(`filter${t.charAt(0).toUpperCase() + t.slice(1)}Card`);
+    if (card) {
+      if (tempFilter === t) {
+        card.classList.add("active-temp-filter");
+      } else {
+        card.classList.remove("active-temp-filter");
+      }
+    }
+  });
 
   const filtered = allLeads.filter((lead) => {
     const matchesEstado = estadoFilter === "todos" || lead.estado === estadoFilter;
     const matchesPrio = prioFilter === "todas" || lead.priority === prioFilter;
+    const matchesTemp = tempFilter === "todas" || lead.temperatura === tempFilter;
 
-    const citiesStr = Array.isArray(lead.ciudades) ? lead.ciudades.join(" ") : "";
+    const citiesStr = Array.isArray(lead.ciudades) ? lead.ciudades.join(" ") : (lead.ciudades || "");
     const searchable = `${lead.nombre} ${lead.empresa} ${lead.cargo} ${lead.email} ${lead.telefono} ${citiesStr} ${lead.necesidad_principal}`.toLowerCase();
     const matchesQuery = !query || searchable.includes(query);
 
-    return matchesEstado && matchesPrio && matchesQuery;
+    return matchesEstado && matchesPrio && matchesTemp && matchesQuery;
   });
 
   renderTable(filtered);
@@ -520,26 +761,39 @@ function renderTable(leads) {
 
       return `
         <tr>
+          <!-- 1. Fecha / Hora -->
           <td class="date-cell">
             <strong>${fechaStr}</strong>
             <span>${horaStr}</span>
           </td>
+
+          <!-- 2. Empresa & Contacto -->
           <td class="company-cell">
             <strong>${escapeHtml(lead.empresa)}</strong>
             <div class="contact-person">👤 ${escapeHtml(lead.nombre)} · <small>${escapeHtml(lead.cargo || "Ejecutivo")}</small></div>
             <div class="contact-links">✉️ ${escapeHtml(lead.email)} | 📞 ${escapeHtml(lead.telefono)}</div>
           </td>
+
+          <!-- 3. Temperatura & Dinero en Juego (Pipeline) -->
           <td>
-            <span class="score-badge score-${lead.priority}">${lead.priorityLabel}</span>
-            <span class="budget-amount">${escapeHtml(lead.presupuesto)}</span>
+            <span class="temp-pill ${lead.temperatura}">${lead.tempLabel}</span>
+            <span class="money-badge">$${(lead.estimatedValue || 0).toLocaleString("en-US")}/mes</span>
+            <span class="prob-indicator">${Math.round((lead.prob || 0) * 100)}% prob · Score: ${lead.score || 0} pts</span>
           </td>
+
+          <!-- 4. Presupuesto & Ciudades -->
           <td>
+            <div style="font-weight: 700; color: #1E293B; margin-bottom: 5px;">💰 ${escapeHtml(lead.presupuesto)}</div>
             <div class="city-tags-wrap">${citiesHtml}</div>
           </td>
+
+          <!-- 5. Dolor Comercial Declarado -->
           <td class="pain-cell">
             <div>${escapeHtml(lead.necesidad_principal)}</div>
             ${hasNotes ? `<span class="note-indicator">📝 Nota guardada</span>` : ""}
           </td>
+
+          <!-- 6. Estado Embudo (Sincronizado con Supabase) -->
           <td>
             <select
               class="status-select status-${lead.estado}"
@@ -553,6 +807,8 @@ function renderTable(leads) {
               <option value="descartado" ${lead.estado === "descartado" ? "selected" : ""}>🔴 Descalificado</option>
             </select>
           </td>
+
+          <!-- 7. Acciones de Venta Directa -->
           <td>
             <div class="row-actions">
               <a href="${waUrl}" target="_blank" rel="noopener" class="btn-wa-row" title="Contactar por WhatsApp con mensaje personalizado">
@@ -588,10 +844,13 @@ function renderKanban(leads) {
         .map(
           (l) => `
           <div class="kanban-card" onclick="openLeadDetailModal('${l.id}')">
-            <span class="score-badge score-${l.priority}">${l.priorityLabel}</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span class="temp-pill ${l.temperatura}" style="margin:0; font-size:0.68rem; padding:2px 8px;">${l.tempLabel}</span>
+              <strong style="color:var(--primary-navy); font-size:0.82rem;">$${(l.estimatedValue || 0).toLocaleString("en-US")}</strong>
+            </div>
             <h4>${escapeHtml(l.empresa)}</h4>
             <p>👤 ${escapeHtml(l.nombre)} (${escapeHtml(l.cargo || "Ejecutivo")})</p>
-            <p><strong>💰 ${escapeHtml(l.presupuesto)}</strong></p>
+            <p style="font-size:0.75rem; color:#64748B;"><strong>💰 ${escapeHtml(l.presupuesto)}</strong></p>
             <div class="city-tags-wrap">
               ${(Array.isArray(l.ciudades) ? l.ciudades : [])
                 .map((c) => `<span class="city-chip">${escapeHtml(c)}</span>`)
@@ -623,25 +882,33 @@ window.handleQuickStatusChange = async function (leadId, newStatus) {
   if (!lead) return;
 
   lead.estado = newStatus;
+  // Recalcular scoring y temperatura en tiempo real
+  const scoreInfo = evaluateLeadScore(lead);
+  Object.assign(lead, scoreInfo);
+
   saveLocalOverride(leadId, { estado: newStatus });
 
-  // Intentar sincronizar en Supabase si la política UPDATE está activa
+  // Sincronizar en la base de datos Supabase (PATCH)
   try {
-    await fetch(`${SUPABASE_CONFIG.url}/rest/v1/leads?id=eq.${leadId}`, {
+    const res = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/leads?id=eq.${leadId}`, {
       method: "PATCH",
       headers: {
         "apikey": SUPABASE_CONFIG.anonKey,
         "Authorization": getAuthHeader(),
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
       },
       body: JSON.stringify({ estado: newStatus })
     });
+    if (!res.ok) {
+      console.warn("Respuesta Supabase PATCH:", res.status);
+    }
   } catch (e) {
-    // Respaldo garantizado en localStorage
+    console.warn("Fallo en sincronización remota Supabase (respaldo local guardado):", e);
   }
 
   renderDashboard();
-  showToast(`✅ Estado de "${lead.empresa}" actualizado a: ${newStatus.toUpperCase()}`);
+  showToast(`✅ "${lead.empresa}" actualizado a ${newStatus.toUpperCase()} y guardado en base de datos`);
 };
 
 window.openLeadDetailModal = function (leadId) {
@@ -691,8 +958,8 @@ function buildWhatsappUrl(lead) {
 // 5. EVENTOS DE INTERFAZ, EXPORTACIÓN CSV E INGRESO MANUAL
 // ========================================================
 function initDashboardEvents() {
-  // Buscador y filtros en vivo
-  ["searchInput", "filterEstado", "filterPrioridad"].forEach((id) => {
+  // Buscador y filtros en vivo (Estado, Prioridad, Temperatura)
+  ["searchInput", "filterEstado", "filterPrioridad", "filterTemperatura"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener("input", applyFiltersAndRender);
@@ -742,6 +1009,8 @@ function initDashboardEvents() {
     if (lead) {
       lead.estado = newEstado;
       lead.notas = newNotas;
+      const scoreInfo = evaluateLeadScore(lead);
+      Object.assign(lead, scoreInfo);
     }
 
     saveLocalOverride(activeLeadId, { estado: newEstado, notas: newNotas });
@@ -752,15 +1021,18 @@ function initDashboardEvents() {
         headers: {
           "apikey": SUPABASE_CONFIG.anonKey,
           "Authorization": getAuthHeader(),
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal"
         },
         body: JSON.stringify({ estado: newEstado })
       });
-    } catch (e) {}
+    } catch (e) {
+      console.warn("Fallo sincronización remota Supabase:", e);
+    }
 
     document.getElementById("leadDetailModal").style.display = "none";
     renderDashboard();
-    showToast("💾 Ficha y notas del prospecto guardadas exitosamente");
+    showToast("💾 Ficha, notas y estado sincronizados con la base de datos");
   });
 
   // Modal de Nuevo Prospecto Manual

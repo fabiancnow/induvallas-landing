@@ -173,11 +173,106 @@
         </article>
       </section>
 
-      <!-- Fila 2: Inteligencia Comercial (Dolores vs Plazas) -->
+      <!-- Fila 2: Pipeline Financiero por Temperatura de Cierre (Dinero en Juego) -->
+      <section class="pipeline-financial-spectrum" aria-label="Pipeline Financiero y Dinero en Juego">
+        <div class="spectrum-header">
+          <div>
+            <span class="spectrum-badge">💰 ESPECTRO FINANCIERO DEL PIPELINE</span>
+            <h2>Dinero en Juego por Temperatura de Prospecto</h2>
+            <p>Monitorea cuánto capital mensual representan las respuestas del formulario, clasificado por probabilidad de cierre.</p>
+          </div>
+          <div class="spectrum-total-box">
+            <span class="spectrum-total-label">Capital Total en Juego (Pipeline)</span>
+            <strong class="spectrum-total-value" id="spectrumTotalMoney">$0 / mes</strong>
+            <small class="spectrum-forecast-label" id="spectrumWeightedForecast">Forecast Ponderado: $0 / mes</small>
+          </div>
+        </div>
+
+        <!-- Barra Visual del Espectro Financiero (% del dinero en juego) -->
+        <div class="spectrum-bar-card">
+          <div class="spectrum-bar-header">
+            <span>Distribución de Capital en Negociación</span>
+            <span id="spectrumActiveCount">0 prospectos activos</span>
+          </div>
+          <div class="spectrum-bar">
+            <div class="spectrum-seg seg-hot" id="barSegHot" style="width: 0%" title="Leads HOT"></div>
+            <div class="spectrum-seg seg-warm" id="barSegWarm" style="width: 0%" title="Leads WARM"></div>
+            <div class="spectrum-seg seg-cold" id="barSegCold" style="width: 0%" title="Leads COLD"></div>
+            <div class="spectrum-seg seg-won" id="barSegWon" style="width: 0%" title="Cerrados Ganados"></div>
+          </div>
+          <div class="spectrum-legend">
+            <span><span class="legend-dot hot"></span> 🔥 HOT: <strong id="legendMoneyHot">$0</strong> (<span id="pctHot">0%</span>)</span>
+            <span><span class="legend-dot warm"></span> ⚡ WARM: <strong id="legendMoneyWarm">$0</strong> (<span id="pctWarm">0%</span>)</span>
+            <span><span class="legend-dot cold"></span> ❄️ COLD: <strong id="legendMoneyCold">$0</strong> (<span id="pctCold">0%</span>)</span>
+            <span><span class="legend-dot won"></span> 🟢 GANADOS: <strong id="legendMoneyWon">$0</strong> (<span id="pctWon">0%</span>)</span>
+          </div>
+        </div>
+
+        <!-- Tarjetas de Segmento Financiero por Temperatura -->
+        <div class="temperature-cards-grid">
+          <!-- Tarjeta HOT -->
+          <article class="temp-card card-hot" id="filterHotCard" onclick="filterByTemperature('hot')">
+            <div class="temp-card-top">
+              <span class="temp-tag tag-hot">🔥 LEADS HOT</span>
+              <span class="temp-prob">85% Probabilidad</span>
+            </div>
+            <div class="temp-money" id="moneyHot">$0</div>
+            <div class="temp-meta">
+              <span id="countHot">0 prospectos</span> · <strong id="forecastHot">Forecast: $0</strong>
+            </div>
+            <p class="temp-desc">Decisores directos (Gerentes/Directores) con presupuestos ≥ $3,500 o campañas urgentes.</p>
+            <div class="temp-action-link">Click para filtrar segmento HOT →</div>
+          </article>
+
+          <!-- Tarjeta WARM -->
+          <article class="temp-card card-warm" id="filterWarmCard" onclick="filterByTemperature('warm')">
+            <div class="temp-card-top">
+              <span class="temp-tag tag-warm">⚡ LEADS WARM</span>
+              <span class="temp-prob">50% Probabilidad</span>
+            </div>
+            <div class="temp-money" id="moneyWarm">$0</div>
+            <div class="temp-meta">
+              <span id="countWarm">0 prospectos</span> · <strong id="forecastWarm">Forecast: $0</strong>
+            </div>
+            <p class="temp-desc">Presupuestos medios ($1,500 - $3,500) evaluando circuitos en Quito, Guayaquil o Cuenca.</p>
+            <div class="temp-action-link">Click para filtrar segmento WARM →</div>
+          </article>
+
+          <!-- Tarjeta COLD -->
+          <article class="temp-card card-cold" id="filterColdCard" onclick="filterByTemperature('cold')">
+            <div class="temp-card-top">
+              <span class="temp-tag tag-cold">❄️ LEADS COLD</span>
+              <span class="temp-prob">20% Probabilidad</span>
+            </div>
+            <div class="temp-money" id="moneyCold">$0</div>
+            <div class="temp-meta">
+              <span id="countCold">0 prospectos</span> · <strong id="forecastCold">Forecast: $0</strong>
+            </div>
+            <p class="temp-desc">Presupuestos iniciales (&lt; $1,500) en fase exploratoria o pymes locales.</p>
+            <div class="temp-action-link">Click para filtrar segmento COLD →</div>
+          </article>
+
+          <!-- Tarjeta CERRADOS GANADOS -->
+          <article class="temp-card card-won" id="filterWonCard" onclick="filterByTemperature('won')">
+            <div class="temp-card-top">
+              <span class="temp-tag tag-won">🟢 CERRADOS</span>
+              <span class="temp-prob">100% Facturado</span>
+            </div>
+            <div class="temp-money" id="moneyWon">$0</div>
+            <div class="temp-meta">
+              <span id="countWon">0 contratos</span> · <strong>Ingreso Real</strong>
+            </div>
+            <p class="temp-desc">Campañas con contratos firmados o pautas activas en circuitos físicos y pantallas DOOH.</p>
+            <div class="temp-action-link">Click para ver Cerrados →</div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Fila 3: Inteligencia Comercial (Dolores vs Plazas) -->
       <section class="insights-grid">
         <div class="insight-box">
           <div class="insight-header">
-            <h3>🎯 Demanda por Dolor Comercial (Fase 1 -> MOFU)</h3>
+            <h3>🎯 Demanda por Dolor Comercial (Fase 1 -&gt; MOFU)</h3>
             <span class="insight-subtitle">¿Qué problema buscan resolver las empresas?</span>
           </div>
           <div id="painDistributionList" class="distribution-list">
@@ -196,7 +291,7 @@
         </div>
       </section>
 
-      <!-- Fila 3: Barra de Herramientas, Filtros y Conmutador de Vista -->
+      <!-- Fila 4: Barra de Herramientas, Filtros y Conmutador de Vista -->
       <section class="controls-bar">
         <div class="search-and-filters">
           <div class="search-box">
@@ -207,6 +302,14 @@
               placeholder="Buscar por empresa, contacto, correo, teléfono o ciudad..."
             />
           </div>
+
+          <select id="filterTemperatura" class="filter-select" aria-label="Filtrar por temperatura de cierre">
+            <option value="todas">🌡️ Todas las Temperaturas</option>
+            <option value="hot">🔥 Leads HOT (Cierre Inminente)</option>
+            <option value="warm">⚡ Leads WARM (Probabilidad Media)</option>
+            <option value="cold">❄️ Leads COLD (Exploratorios)</option>
+            <option value="won">🟢 Cerrados / Ganados</option>
+          </select>
 
           <select id="filterEstado" class="filter-select" aria-label="Filtrar por estado">
             <option value="todos">📌 Todos los Estados</option>
@@ -236,7 +339,7 @@
         </div>
       </section>
 
-      <!-- Fila 4A: Vista Tabla Ejecutiva de Leads -->
+      <!-- Fila 5: Vista Tabla Ejecutiva de Leads -->
       <section id="tableViewSection" class="data-section">
         <div class="table-responsive">
           <table class="crm-table">
@@ -244,10 +347,10 @@
               <tr>
                 <th>Fecha / Hora</th>
                 <th>Empresa &amp; Contacto</th>
-                <th>Score &amp; Presupuesto</th>
-                <th>Ciudades de Interés</th>
+                <th>Temperatura &amp; $ en Juego</th>
+                <th>Presupuesto &amp; Ciudades</th>
                 <th>Dolor Comercial Declarado</th>
-                <th>Estado del Embudo</th>
+                <th>Estado Embudo (Supabase)</th>
                 <th>Acciones de Venta</th>
               </tr>
             </thead>
