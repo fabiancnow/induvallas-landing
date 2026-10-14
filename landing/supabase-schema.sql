@@ -1,5 +1,5 @@
 -- ========================================================
--- TABLA DE LEADS - FILTRO DE CUALIFICACIÓN MOFU & LOPDP (INDUVALLAS)
+-- TABLA DE LEADS - FILTRO DE CUALIFICACIÓN MOFU & LOPDP (VALLASEC)
 -- Esquema Hardened (Blindado contra fugas de datos y scraping público)
 -- ========================================================
 

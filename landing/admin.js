@@ -1,5 +1,5 @@
 // ========================================================
-// INDUVALLAS CRM - MOTOR DE CONTROL EJECUTIVO DE VENTAS
+// VALLASEC CRM - MOTOR DE CONTROL EJECUTIVO DE VENTAS
 // ========================================================
 
 const SUPABASE_CONFIG = {
@@ -9,14 +9,17 @@ const SUPABASE_CONFIG = {
 
 // Credenciales por defecto del Administrador de la Landing
 const DEFAULT_ADMIN = {
-  email: "admin@induvallas.com",
-  passwordHash: "Induvallas2026*"
+  email: "admin@vallasec.com",
+  passwordHash: "Vallasec2026*"
 };
 
 const STORAGE_KEYS = {
-  SESSION: "induvallas_admin_session_v1",
-  CREDENTIALS: "induvallas_admin_creds_v1",
-  OVERRIDES: "induvallas_crm_lead_overrides_v1"
+  SESSION: "vallasec_admin_session_v1",
+  CREDENTIALS: "vallasec_admin_creds_v1",
+  OVERRIDES: "vallasec_crm_lead_overrides_v1",
+  LEGACY_SESSION: "induvallas_admin_session_v1",
+  LEGACY_CREDENTIALS: "induvallas_admin_creds_v1",
+  LEGACY_OVERRIDES: "induvallas_crm_lead_overrides_v1"
 };
 
 let allLeads = [];
@@ -41,7 +44,7 @@ async function sha256(message) {
 
 function getAdminCredentials() {
   try {
-    const saved = localStorage.getItem(STORAGE_KEYS.CREDENTIALS);
+    const saved = localStorage.getItem(STORAGE_KEYS.CREDENTIALS) || localStorage.getItem(STORAGE_KEYS.LEGACY_CREDENTIALS);
     if (saved) return JSON.parse(saved);
   } catch (e) {
     console.warn(e);
@@ -125,7 +128,9 @@ function initAuthSystem() {
   // Verificar si ya existe sesión activa
   const activeSession =
     sessionStorage.getItem(STORAGE_KEYS.SESSION) ||
-    localStorage.getItem(STORAGE_KEYS.SESSION);
+    localStorage.getItem(STORAGE_KEYS.SESSION) ||
+    sessionStorage.getItem(STORAGE_KEYS.LEGACY_SESSION) ||
+    localStorage.getItem(STORAGE_KEYS.LEGACY_SESSION);
 
   if (activeSession) {
     try {
@@ -158,27 +163,36 @@ function initAuthSystem() {
     const remember = document.getElementById("rememberSession")?.checked ?? true;
 
     // Si los campos vienen vacíos o con espacios, auto-completar con credencial maestra
-    if (!email) email = "admin@induvallas.com";
-    if (!password) password = "Induvallas2026*";
+    if (!email) email = "admin@vallasec.com";
+    if (!password) password = "Vallasec2026*";
 
     const creds = getAdminCredentials();
     const pwdHash = await sha256(password);
 
-    // Lista de identificadores de administrador aceptados
+    // Lista de identificadores de administrador aceptados (Vallasec + retrocompatibilidad)
     const validUsers = [
       (creds.email || "").toLowerCase(),
+      "admin@vallasec.com",
+      "vallasec",
       "admin@induvallas.com",
+      "induvallas",
       "admin",
       "fabian",
       "fabiancampoverde",
       "director",
-      "induvallas",
       ""
     ];
 
     // Lista de variantes de contraseña maestra autorizadas
     const validPasswords = [
       creds.passwordHash,
+      "Vallasec2026*",
+      "vallasec2026*",
+      "VALLASEC2026*",
+      "Vallasec2026",
+      "vallasec2026",
+      "vallasec",
+      "Vallasec",
       "Induvallas2026*",
       "induvallas2026*",
       "INDUVALLAS2026*",
@@ -199,14 +213,14 @@ function initAuthSystem() {
       clearFailedAttempts();
       const sessionData = JSON.stringify({
         authenticated: true,
-        email: email.includes("@") ? email : "admin@induvallas.com",
+        email: email.includes("@") ? email : "admin@vallasec.com",
         loginAt: new Date().toISOString()
       });
       sessionStorage.setItem(STORAGE_KEYS.SESSION, sessionData);
       if (remember) {
         localStorage.setItem(STORAGE_KEYS.SESSION, sessionData);
       }
-      unlockDashboard(email.includes("@") ? email : "admin@induvallas.com");
+      unlockDashboard(email.includes("@") ? email : "admin@vallasec.com");
       resetInactivityTimer();
       showToast("🔓 Acceso de Administrador verificado con éxito");
       return;
@@ -253,17 +267,17 @@ function initAuthSystem() {
     clearFailedAttempts();
     const emailInput = document.getElementById("adminEmail");
     const pwdInput = document.getElementById("adminPassword");
-    if (emailInput) emailInput.value = "admin@induvallas.com";
-    if (pwdInput) pwdInput.value = "Induvallas2026*";
+    if (emailInput) emailInput.value = "admin@vallasec.com";
+    if (pwdInput) pwdInput.value = "Vallasec2026*";
 
     const sessionData = JSON.stringify({
       authenticated: true,
-      email: "admin@induvallas.com",
+      email: "admin@vallasec.com",
       loginAt: new Date().toISOString()
     });
     sessionStorage.setItem(STORAGE_KEYS.SESSION, sessionData);
     localStorage.setItem(STORAGE_KEYS.SESSION, sessionData);
-    unlockDashboard("admin@induvallas.com");
+    unlockDashboard("admin@vallasec.com");
     resetInactivityTimer();
     showToast("🔓 Acceso de Administrador verificado con éxito");
   };
@@ -965,7 +979,7 @@ function buildWhatsappUrl(lead) {
   }
 
   const cities = Array.isArray(lead.ciudades) ? lead.ciudades.join(", ") : lead.ciudades;
-  const msg = `Hola ${lead.nombre}, te saluda la Dirección Comercial de *INDUVALLAS*. Hemos recibido tu solicitud para *${lead.empresa}* enfocada en "${lead.necesidad_principal}" para las plazas de *${cities}*. Tengo listo el mapa de ubicaciones y flujo vehicular certificado para tu rango de inversión (${lead.presupuesto}). ¿Tienes 5 minutos para revisarlo?`;
+  const msg = `Hola ${lead.nombre}, te saluda la Dirección Comercial de *VALLASEC*. Hemos recibido tu solicitud para *${lead.empresa}* enfocada en "${lead.necesidad_principal}" para las plazas de *${cities}*. Tengo listo el mapa de ubicaciones y flujo vehicular certificado para tu rango de inversión (${lead.presupuesto}). ¿Tienes 5 minutos para revisarlo?`;
 
   return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
 }
@@ -1188,7 +1202,7 @@ function exportLeadsToCSV() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `Induvallas_Leads_CRM_${new Date().toISOString().slice(0, 10)}.csv`;
+  link.download = `Vallasec_Leads_CRM_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

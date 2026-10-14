@@ -1,5 +1,5 @@
 // ========================================================
-// INDUVALLAS - CAPTURA DE LEADS Y CONEXIÓN SUPABASE
+// VALLASEC - CAPTURA DE LEADS Y CONEXIÓN SUPABASE
 // ========================================================
 
 // Configuración de Supabase
